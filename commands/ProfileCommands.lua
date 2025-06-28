@@ -18,6 +18,10 @@ function ProfileCommands.new(jobSettings, subJobSettings, trustModeSettings, wea
     self:add_command('create', self.handle_create_profile, 'Creates a new profile', L{
         PickerConfigItem.new('profile_name', state.TrustMode.value, L{ state.TrustMode.value }, nil, "Profile Name"),
     })
+    -- Add this new command:
+    self:add_command('set', self.handle_set_profile, 'Sets the active profile', L{
+        PickerConfigItem.new('profile_name', state.TrustMode.value, L(state.TrustMode:options()), nil, "Profile Name"),
+    })
 
     return self
 end
@@ -45,6 +49,32 @@ function ProfileCommands:handle_create_profile(_, profile_name)
     else
         success = false
         message = "Invalid profile name "..(profile_name or 'nil')
+    end
+
+    return success, message
+end
+
+function ProfileCommands:handle_set_profile(_, profile_name)
+    local success
+    local message
+
+    if profile_name then
+        -- Check if the profile exists in the available options
+        local available_profiles = L(state.TrustMode:options())
+        
+        if available_profiles:contains(profile_name) then
+            -- Set the profile
+            state.TrustMode:set(profile_name)
+            success = true
+            message = "Profile set to: " .. profile_name
+        else
+            success = false
+            message = "Profile '" .. profile_name .. "' not found. Available profiles: " .. 
+                     localization_util.commas(available_profiles, 'and')
+        end
+    else
+        success = false
+        message = "Please specify a profile name"
     end
 
     return success, message
