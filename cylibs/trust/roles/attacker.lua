@@ -10,23 +10,26 @@ local IsAssistTargetCondition = require('cylibs/conditions/is_assist_target')
 local PartyClaimedCondition = require('cylibs/conditions/party_claimed')
 local TargetMismatchCondition = require('cylibs/conditions/target_mismatch')
 local UnclaimedCondition = require('cylibs/conditions/unclaimed')
+local RunToLocation = require('cylibs/actions/runtolocation')
 
 local Gambiter = require('cylibs/trust/roles/gambiter')
 local Attacker = setmetatable({}, {__index = Gambiter })
 Attacker.__index = Attacker
 Attacker.__class = "Attacker"
 
-state.AutoEngageMode = M{['description'] = 'Auto Engage Mode', 'Off', 'Always', 'Mirror'}
+state.AutoEngageMode = M{['description'] = 'Auto Engage Mode', 'Off', 'Always', 'Mirror', 'KiteAssist'}
 state.AutoEngageMode:set_description('Off', "Manually engage and disengage.")
 state.AutoEngageMode:set_description('Always', "Automatically engage when targeting a claimed mob.")
 state.AutoEngageMode:set_description('Mirror', "Mirror the engage status of the party member you are assisting.")
+state.AutoEngageMode:set_description('KiteAssist', "Attack the mob targeted by the assigned kiter, even if not engaged.")
 
 function Attacker.new(action_queue)
     local self = setmetatable(Gambiter.new(action_queue, { Gambits = L{} }, L{ state.AutoEngageMode, state.AutoPullMode }), Attacker)
 
     self.dispose_bag = DisposeBag.new()
-
     self:set_attacker_settings({})
+    self.follow_target_distance = 3 -- default follow distance in yalms
+    self.kiter_name = nil
 
     return self
 end
@@ -37,11 +40,56 @@ function Attacker:destroy()
     self.dispose_bag:destroy()
 end
 
+function Attacker:set_kiter(name)
+    self.kiter_name = name
+end
+
+function Attacker:handle_kite_assist_command(kiter_name)
+    self:set_kiter(kiter_name)
+    state.AutoEngageMode:set('KiteAssist')
+end
+
+function Attacker:check_and_follow_kite_target()
+    if state.AutoEngageMode.value ~= 'KiteAssist' or not self.kiter_name then
+        return
+    end
+    -- Find the mob targeted by the kiter
+    local kiter = nil
+    for _, mob in pairs(windower.ffxi.get_mob_array()) do
+        if mob.name == self.kiter_name and mob.is_npc == false then
+            kiter = mob
+            break
+        end
+    end
+    if not kiter then return end
+    local kiter_target_index = kiter.target_index
+    if not kiter_target_index then return end
+    local mob = windower.ffxi.get_mob_by_index(kiter_target_index)
+    if mob and mob.valid_target and mob.hpp > 0 then
+        local player = windower.ffxi.get_mob_by_index(windower.ffxi.get_player().index)
+        if player then
+            local dx = mob.x - player.x
+            local dy = mob.y - player.y
+            local dz = mob.z - player.z
+            local dist3d = math.sqrt(dx*dx + dy*dy + dz*dz)
+            if dist3d > self.follow_target_distance then
+                self.action_queue:push_action(RunToLocation.new(mob.x, mob.y, mob.z, self.follow_target_distance), true)
+            end
+            -- Engage if not already engaged
+            if player.status ~= 1 then -- 1 = Engaged
+                self.action_queue:push_action(Engage.new(), true)
+            end
+        end
+    end
+end
+
 function Attacker:on_add()
     Gambiter.on_add(self)
 
     self.dispose_bag:add(self:get_party():on_party_target_change():addAction(function(_, _)
         self:check_gambits()
+        self:check_and_follow_target()
+        self:check_and_follow_kite_target()
     end), self:get_party():on_party_target_change())
 end
 
@@ -49,6 +97,28 @@ function Attacker:target_change(target_index)
     Gambiter.target_change(self, target_index)
 
     self:check_gambits()
+    self:check_and_follow_target()
+    self:check_and_follow_kite_target()
+end
+
+function Attacker:set_follow_target_distance(distance)
+    self.follow_target_distance = distance or 3
+end
+
+function Attacker:check_and_follow_target()
+    local target = windower.ffxi.get_mob_by_target('t')
+    if target and target.valid_target and target.hpp > 0 then
+        local player = windower.ffxi.get_mob_by_index(windower.ffxi.get_player().index)
+        if player then
+            local dx = target.x - player.x
+            local dy = target.y - player.y
+            local dz = target.z - player.z
+            local dist3d = math.sqrt(dx*dx + dy*dy + dz*dz)
+            if dist3d > self.follow_target_distance then
+                self.action_queue:push_action(RunToLocation.new(target.x, target.y, target.z, self.follow_target_distance), true)
+            end
+        end
+    end
 end
 
 function Attacker:set_attacker_settings(_)
@@ -82,6 +152,13 @@ function Attacker:set_attacker_settings(_)
                 GambitCondition.new(StatusCondition.new('Idle'), GambitTarget.TargetType.Self),
                 GambitCondition.new(TargetMismatchCondition.new(), GambitTarget.TargetType.Self),
             }, Target.new(), GambitTarget.TargetType.Self), -- TODO: should I also remove aggroed condition from this??
+            Gambit.new(GambitTarget.TargetType.Enemy, L{
+                GambitCondition.new(ModeCondition.new('AutoEngageMode', 'KiteAssist'), GambitTarget.TargetType.Self),
+                -- Always engage the mob targeted by the kiter, regardless of engagement status
+                GambitCondition.new(StatusCondition.new('Idle'), GambitTarget.TargetType.Self),
+                GambitCondition.new(MaxDistanceCondition.new(30), GambitTarget.TargetType.Enemy),
+                GambitCondition.new(ValidTargetCondition.new(alter_ego_util.untargetable_alter_egos()), GambitTarget.TargetType.Enemy),
+            }, Engage.new(), GambitTarget.TargetType.Enemy),
         }
     }
 
