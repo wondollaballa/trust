@@ -65,28 +65,5 @@ function Assistant:get_type()
     return "assistant"
 end
 
--- New: Handle the kite assist command
-function Assistant:handle_kite_assist_command()
-    local mob = windower.ffxi.get_mob_by_target('t')
-    if mob and mob.valid_target and mob.hpp > 0 then
-        self.kite_target_id = mob.id
-        state.AutoAssistantMode:set('KiteAssist')
-        self:get_party():add_to_chat(self:get_party():get_player(), "KiteAssist: Trusts will now focus on "..mob.name..".")
-        -- Notify attackers to update their kite target (if needed)
-        -- This assumes attackers check for this mode and kite_target_id
-        self:trigger_kite_assist()
-    else
-        self:get_party():add_to_chat(self:get_party():get_player(), "No valid mob targeted for KiteAssist.")
-    end
-end
-
--- New: Notify attackers to move to the kite target
-function Assistant:trigger_kite_assist()
-    -- This is a stub; actual implementation may use IPC or shared state
-    -- Example: If you have a reference to attacker roles, call their handler:
-    -- for _, role in pairs(self:get_party():get_roles_by_type("attacker")) do
-    --     role:handle_kite_assist_command(self.kite_target_id)
-    -- end
-end
 
 return Assistant

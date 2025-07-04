@@ -49,47 +49,12 @@ function Attacker:handle_kite_assist_command(kiter_name)
     state.AutoEngageMode:set('KiteAssist')
 end
 
-function Attacker:check_and_follow_kite_target()
-    if state.AutoEngageMode.value ~= 'KiteAssist' or not self.kiter_name then
-        return
-    end
-    -- Find the mob targeted by the kiter
-    local kiter = nil
-    for _, mob in pairs(windower.ffxi.get_mob_array()) do
-        if mob.name == self.kiter_name and mob.is_npc == false then
-            kiter = mob
-            break
-        end
-    end
-    if not kiter then return end
-    local kiter_target_index = kiter.target_index
-    if not kiter_target_index then return end
-    local mob = windower.ffxi.get_mob_by_index(kiter_target_index)
-    if mob and mob.valid_target and mob.hpp > 0 then
-        local player = windower.ffxi.get_mob_by_index(windower.ffxi.get_player().index)
-        if player then
-            local dx = mob.x - player.x
-            local dy = mob.y - player.y
-            local dz = mob.z - player.z
-            local dist3d = math.sqrt(dx*dx + dy*dy + dz*dz)
-            if dist3d > self.follow_target_distance then
-                self.action_queue:push_action(RunToLocation.new(mob.x, mob.y, mob.z, self.follow_target_distance), true)
-            end
-            -- Engage if not already engaged
-            if player.status ~= 1 then -- 1 = Engaged
-                self.action_queue:push_action(Engage.new(), true)
-            end
-        end
-    end
-end
-
 function Attacker:on_add()
     Gambiter.on_add(self)
 
     self.dispose_bag:add(self:get_party():on_party_target_change():addAction(function(_, _)
         self:check_gambits()
         self:check_and_follow_target()
-        self:check_and_follow_kite_target()
     end), self:get_party():on_party_target_change())
 end
 
@@ -98,7 +63,6 @@ function Attacker:target_change(target_index)
 
     self:check_gambits()
     self:check_and_follow_target()
-    self:check_and_follow_kite_target()
 end
 
 function Attacker:set_follow_target_distance(distance)
@@ -106,6 +70,23 @@ function Attacker:set_follow_target_distance(distance)
 end
 
 function Attacker:check_and_follow_target()
+    -- In KiteAssist mode, always follow the battle target ('bt')
+    if state.AutoEngageMode and state.AutoEngageMode.value == 'KiteAssist' then
+        local target = windower.ffxi.get_mob_by_target('bt')
+        if target and target.valid_target and target.hpp > 0 then
+            local player = windower.ffxi.get_mob_by_index(windower.ffxi.get_player().index)
+            if player then
+                local dx = target.x - player.x
+                local dy = target.y - player.y
+                local dz = target.z - player.z
+                local dist3d = math.sqrt(dx*dx + dy*dy + dz*dz)
+                if dist3d > 3 then
+                    self.action_queue:push_action(RunToLocation.new(target.x, target.y, target.z, 3), true)
+                end
+            end
+        end
+        return
+    end
     local target = windower.ffxi.get_mob_by_target('t')
     if target and target.valid_target and target.hpp > 0 then
         local player = windower.ffxi.get_mob_by_index(windower.ffxi.get_player().index)
