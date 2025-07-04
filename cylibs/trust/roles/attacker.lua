@@ -11,6 +11,7 @@ local PartyClaimedCondition = require('cylibs/conditions/party_claimed')
 local TargetMismatchCondition = require('cylibs/conditions/target_mismatch')
 local UnclaimedCondition = require('cylibs/conditions/unclaimed')
 local RunToLocation = require('cylibs/actions/runtolocation')
+local Approach = require('cylibs/battle/approach')
 
 local Gambiter = require('cylibs/trust/roles/gambiter')
 local Attacker = setmetatable({}, {__index = Gambiter })
@@ -105,6 +106,24 @@ end
 function Attacker:set_attacker_settings(_)
     local gambit_settings = {
         Gambits = L{
+           
+            -- Movement: Stay within melee range while engaged (for any mode)
+            Gambit.new(GambitTarget.TargetType.Enemy, L{
+                GambitCondition.new(StatusCondition.new('Engaged'), GambitTarget.TargetType.Self),
+                GambitCondition.new(Distance.new(4, Condition.Operator.GreaterThan), GambitTarget.TargetType.CurrentTarget),
+                GambitCondition.new(MaxDistanceCondition.new(25), GambitTarget.TargetType.CurrentTarget),
+                GambitCondition.new(ValidTargetCondition.new(alter_ego_util.untargetable_alter_egos()), GambitTarget.TargetType.CurrentTarget),
+            }, Approach.new(2), GambitTarget.TargetType.CurrentTarget),
+            
+            -- Movement: For KiteAssist mode, always stay close to battle target
+            Gambit.new(GambitTarget.TargetType.Enemy, L{
+                GambitCondition.new(ModeCondition.new('AutoEngageMode', 'KiteAssist'), GambitTarget.TargetType.Self),
+                GambitCondition.new(Distance.new(4, Condition.Operator.GreaterThan), GambitTarget.TargetType.Enemy),
+                GambitCondition.new(MaxDistanceCondition.new(25), GambitTarget.TargetType.Enemy),
+                GambitCondition.new(ValidTargetCondition.new(alter_ego_util.untargetable_alter_egos()), GambitTarget.TargetType.Enemy),
+            }, Approach.new(2), GambitTarget.TargetType.Enemy),
+
+
             Gambit.new(GambitTarget.TargetType.Enemy, L{
                 GambitCondition.new(ModeCondition.new('AutoEngageMode', 'Always'), GambitTarget.TargetType.Self),
                 GambitCondition.new(StatusCondition.new('Idle'), GambitTarget.TargetType.Self),
@@ -113,9 +132,6 @@ function Attacker:set_attacker_settings(_)
                 GambitCondition.new(ConditionalCondition.new(L{ UnclaimedCondition.new(), PartyClaimedCondition.new(true) }, Condition.LogicalOperator.Or), GambitTarget.TargetType.Enemy),
                 GambitCondition.new(ValidTargetCondition.new(alter_ego_util.untargetable_alter_egos()), GambitTarget.TargetType.Enemy),
             }, Engage.new(), GambitTarget.TargetType.Enemy),
-
-
-
             Gambit.new(GambitTarget.TargetType.Enemy, L{
                 GambitCondition.new(ModeCondition.new('AutoEngageMode', 'Mirror'), GambitTarget.TargetType.Self),
                 GambitCondition.new(IsAssistTargetCondition.new(), GambitTarget.TargetType.Ally),
@@ -143,14 +159,6 @@ function Attacker:set_attacker_settings(_)
                 GambitCondition.new(MaxDistanceCondition.new(30), GambitTarget.TargetType.Enemy),
                 GambitCondition.new(ValidTargetCondition.new(alter_ego_util.untargetable_alter_egos()), GambitTarget.TargetType.Enemy),
             }, Engage.new(), GambitTarget.TargetType.Enemy),
-
-            -- Extra: Stay within melee range (3 yalms) when engaged
-            Gambit.new(GambitTarget.TargetType.Enemy, L{
-                GambitCondition.new(StatusCondition.new('Engaged'), GambitTarget.TargetType.Self),
-                GambitCondition.new(Distance.new(4, Condition.Operator.GreaterThan), GambitTarget.TargetType.CurrentTarget),
-                GambitCondition.new(MaxDistanceCondition.new(25), GambitTarget.TargetType.CurrentTarget), -- Don't chase too far
-                GambitCondition.new(ValidTargetCondition.new(alter_ego_util.untargetable_alter_egos()), GambitTarget.TargetType.CurrentTarget),
-            }, RunToLocation.new(nil, nil, nil, 2), GambitTarget.TargetType.CurrentTarget),
         }
     }
 
