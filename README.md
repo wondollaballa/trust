@@ -7,7 +7,6 @@ Trust is a Windower 4 addon for FFXI that turns your character into a Trust. It 
 ![image](https://github.com/user-attachments/assets/176fdd32-3d10-4664-8941-93f5c2887e73)
 ![image](https://github.com/user-attachments/assets/dd62282d-3424-4a34-9842-d33bd2049cb5)
 
-
 ## Donate
 :star: Trust is a completely free addon maintained as a hobby project. If you're enjoying using Trust, consider [**donating**](https://www.buymeacoffee.com/cyrite) to show your support and keep it going! :star:
 
@@ -28,7 +27,6 @@ You will need the latest version of [Trust](https://github.com/cyritegamestudios
 5. To update, launch the installer again.
 
 ![image](https://github.com/user-attachments/assets/06b59159-b92e-483e-8f3e-7d9b5c32026d)
-
 
 ### Manual
 1. Download the latest release of [Trust](https://github.com/cyritegamestudios/trust/releases) from GitHub (trust.zip under `Assets` at the bottom of the release page).
@@ -59,7 +57,6 @@ Trust also requires the following addons, which can be installed through [Window
 Trustを日本語に翻訳したい場合は、Config > Languageの下で言語を日本語に更新し、保存してください。
 
 ![image](https://github.com/user-attachments/assets/e15a9bd1-bd9e-42b4-a7ff-c130eaa23e7a)
-
 
 ### Optional
 
@@ -162,5 +159,35 @@ See [Windower Commands](https://github.com/cyritegamestudios/trust/wiki/Commands
     * [Tank](https://github.com/cyritegamestudios/trust/wiki/Tank)
     * [Targeter](https://github.com/cyritegamestudios/trust/wiki/Targeter)
     * [Truster](https://github.com/cyritegamestudios/trust/wiki/Truster)
+
+## New Kite Assist Mode
+
+### Purpose
+
+Allows you to designate a "kiter" (usually the tank) and have all trusts attack and follow the mob you are targeting, even if you are not engaged. This is useful for fights where the tank must stay away from the mob, but trusts need to stay close to attack.
+
+### Usage
+
+- Target the mob you want your trusts to attack.
+- Run the command:
+  ```
+  //trust assist kite
+  ```
+- Trusts will disengage from their current target (if any) and move to attack the mob you are targeting.
+- If you select another mob, run the command again to update the trusts' focus.
+
+### Related Commands
+
+- `//trust assist kite`  
+  Sets KiteAssist mode and directs trusts to attack your current target.
+
+- `//trust attack kiteassist`  
+  (Optional) Directly sets attack mode to KiteAssist for all attackers.
+
+### Notes
+
+- Each time you run the kite command, trusts will switch to the new mob.
+- The tank (kiter) does not need to be engaged for trusts to attack.
+- Make sure the Assistant and Attacker roles are loaded for this feature to work.
 
 

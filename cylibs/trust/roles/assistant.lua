@@ -4,14 +4,16 @@ local Assistant = setmetatable({}, {__index = Role })
 Assistant.__index = Assistant
 Assistant.__class = "Assistant"
 
-state.AutoAssistantMode = M{['description'] = 'Assistant Mode', 'Off', 'Auto'}
+state.AutoAssistantMode = M{['description'] = 'Assistant Mode', 'Off', 'Auto', 'KiteAssist'}
 state.AutoAssistantMode:set_description('Auto', "See extra information on the current mob.")
+state.AutoAssistantMode:set_description('KiteAssist', "Direct trusts to attack the mob you select, even if you are not engaged.")
 
 function Assistant.new(action_queue, watch_list)
     local self = setmetatable(Role.new(action_queue), Assistant)
 
     self.watch_list = watch_list or S{}
     self.dispose_bag = DisposeBag.new()
+    self.kite_target_id = nil
 
     return self
 end
@@ -61,6 +63,30 @@ end
 
 function Assistant:get_type()
     return "assistant"
+end
+
+-- New: Handle the kite assist command
+function Assistant:handle_kite_assist_command()
+    local mob = windower.ffxi.get_mob_by_target('t')
+    if mob and mob.valid_target and mob.hpp > 0 then
+        self.kite_target_id = mob.id
+        state.AutoAssistantMode:set('KiteAssist')
+        self:get_party():add_to_chat(self:get_party():get_player(), "KiteAssist: Trusts will now focus on "..mob.name..".")
+        -- Notify attackers to update their kite target (if needed)
+        -- This assumes attackers check for this mode and kite_target_id
+        self:trigger_kite_assist()
+    else
+        self:get_party():add_to_chat(self:get_party():get_player(), "No valid mob targeted for KiteAssist.")
+    end
+end
+
+-- New: Notify attackers to move to the kite target
+function Assistant:trigger_kite_assist()
+    -- This is a stub; actual implementation may use IPC or shared state
+    -- Example: If you have a reference to attacker roles, call their handler:
+    -- for _, role in pairs(self:get_party():get_roles_by_type("attacker")) do
+    --     role:handle_kite_assist_command(self.kite_target_id)
+    -- end
 end
 
 return Assistant

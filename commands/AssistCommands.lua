@@ -22,6 +22,7 @@ function AssistTrustCommands.new(trust, action_queue)
     self:add_command('me', self.handle_assist_me, 'Make all players assist me')
     self:add_command('clear', self.handle_clear_assist, 'Clear assist target')
     self:add_command('lock', self.handle_lock_target, 'Locks your target on the party\'s current battle target until it dies (use for Aminon only)')
+    self:add_command('kite', self.handle_kite_assist, 'Direct trusts to attack the mob you select, even if you are not engaged')
 
     trust:get_party():on_party_members_changed():addAction(function(party_members)
         local party_member_names = party_members:map(function(p) return p:get_name() end)
@@ -127,6 +128,17 @@ function AssistTrustCommands:handle_lock_target()
     end
 
     return success, message
+end
+
+-- // trust assist kite
+function AssistTrustCommands:handle_kite_assist()
+    local assistant = self.trust:get_party():get_role_by_type("assistant")
+    if assistant and assistant.handle_kite_assist_command then
+        assistant:handle_kite_assist_command()
+        return true, "KiteAssist: Trusts will now focus on your current target."
+    else
+        return false, "No assistant role loaded or unable to set KiteAssist."
+    end
 end
 
 return AssistTrustCommands

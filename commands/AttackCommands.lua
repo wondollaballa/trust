@@ -14,6 +14,8 @@ function AttackTrustCommands.new(trust, action_queue)
     self:add_command('off', function(_) return self:handle_set_mode('AutoEngageMode', 'Off')  end, 'Disable engaging')
     self:add_command('engage', function(_) return self:handle_set_mode('AutoEngageMode', 'Always')  end, 'Automatically engage mobs party is fighting')
     self:add_command('mirror', function(_) return self:handle_set_mode('AutoEngageMode', 'Mirror')  end, 'Automatically engage only if assist target is fighting')
+    -- Add kiteassist command
+    self:add_command('kiteassist', function(_) return self:handle_set_mode('AutoEngageMode', 'KiteAssist') end, 'Attack the mob targeted by the assigned kiter, even if not engaged')
 
     return self
 end
