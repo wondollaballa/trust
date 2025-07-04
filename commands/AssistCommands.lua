@@ -132,13 +132,29 @@ end
 
 -- // trust assist kite
 function AssistTrustCommands:handle_kite_assist()
-    local assistant = self.trust:get_party():get_role_by_type("assistant")
-    if assistant and assistant.handle_kite_assist_command then
-        assistant:handle_kite_assist_command()
-        return true, "KiteAssist: Trusts will now focus on your current target."
-    else
+    -- Find assistant role by iterating roles
+    local assistant = nil
+    if self.trust and self.trust.get_party and self.trust:get_party().get_roles then
+        for _, role in pairs(self.trust:get_party():get_roles()) do
+            if role.get_type and role:get_type() == "assistant" then
+                assistant = role
+                break
+            end
+        end
+    end
+
+    if not assistant or not assistant.handle_kite_assist_command then
         return false, "No assistant role loaded or unable to set KiteAssist."
     end
+
+    local mob = windower.ffxi.get_mob_by_target('t')
+    if not mob or not mob.valid_target or mob.hpp <= 0 then
+        self.trust:get_party():add_to_chat(self.trust:get_party():get_player(), "You must select a mob to kite.")
+        return false, "You must select a mob to kite."
+    end
+
+    assistant:handle_kite_assist_command()
+    return true, "KiteAssist: Trusts will now focus on your current target."
 end
 
 return AssistTrustCommands
