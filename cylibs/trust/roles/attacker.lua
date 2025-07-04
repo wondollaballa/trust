@@ -56,6 +56,12 @@ function Attacker:on_add()
         self:check_gambits()
         self:check_and_follow_target()
     end), self:get_party():on_party_target_change())
+    
+    self.dispose_bag:add(windower.register_event('time change', function()
+        if windower.ffxi.get_player().status == 1 then -- If engaged
+            self:check_and_follow_target()
+        end
+    end))
 
 end
 
