@@ -11,7 +11,6 @@ local PartyClaimedCondition = require('cylibs/conditions/party_claimed')
 local TargetMismatchCondition = require('cylibs/conditions/target_mismatch')
 local UnclaimedCondition = require('cylibs/conditions/unclaimed')
 local RunToLocation = require('cylibs/actions/runtolocation')
-local Approach = require('cylibs/battle/approach')
 
 local Gambiter = require('cylibs/trust/roles/gambiter')
 local Attacker = setmetatable({}, {__index = Gambiter })
@@ -103,6 +102,30 @@ function Attacker:check_and_follow_target()
     end
 end
 
+-- Create a custom approach action
+local function CreateApproachAction(distance)
+    return {
+        can_perform = function(self, target)
+            if not target then return false end
+            local player = windower.ffxi.get_mob_by_index(windower.ffxi.get_player().index)
+            if not player then return false end
+            
+            local dx = target.x - player.x
+            local dy = target.y - player.y
+            local dz = target.z - player.z
+            local dist3d = math.sqrt(dx*dx + dy*dy + dz*dz)
+            
+            return dist3d > distance
+        end,
+        perform = function(self, target)
+            if target then
+                return RunToLocation.new(target.x, target.y, target.z, distance)
+            end
+            return nil
+        end
+    }
+end
+
 function Attacker:set_attacker_settings(_)
     local gambit_settings = {
         Gambits = L{
@@ -113,7 +136,7 @@ function Attacker:set_attacker_settings(_)
                 GambitCondition.new(Distance.new(4, Condition.Operator.GreaterThan), GambitTarget.TargetType.CurrentTarget),
                 GambitCondition.new(MaxDistanceCondition.new(25), GambitTarget.TargetType.CurrentTarget),
                 GambitCondition.new(ValidTargetCondition.new(alter_ego_util.untargetable_alter_egos()), GambitTarget.TargetType.CurrentTarget),
-            }, Approach.new(2), GambitTarget.TargetType.CurrentTarget),
+            }, CreateApproachAction(2), GambitTarget.TargetType.CurrentTarget), -- Add 'false' as second parameter
             
             -- Movement: For KiteAssist mode, always stay close to battle target
             Gambit.new(GambitTarget.TargetType.Enemy, L{
@@ -121,7 +144,8 @@ function Attacker:set_attacker_settings(_)
                 GambitCondition.new(Distance.new(4, Condition.Operator.GreaterThan), GambitTarget.TargetType.Enemy),
                 GambitCondition.new(MaxDistanceCondition.new(25), GambitTarget.TargetType.Enemy),
                 GambitCondition.new(ValidTargetCondition.new(alter_ego_util.untargetable_alter_egos()), GambitTarget.TargetType.Enemy),
-            }, Approach.new(2), GambitTarget.TargetType.Enemy),
+            }, CreateApproachAction(2), GambitTarget.TargetType.Enemy), -- Add 'false' as second parameter
+
 
 
             Gambit.new(GambitTarget.TargetType.Enemy, L{
