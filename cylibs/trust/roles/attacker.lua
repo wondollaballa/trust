@@ -88,7 +88,8 @@ function Attacker:check_and_follow_target()
             local dz = target.z - player.z
             local dist3d = math.sqrt(dx*dx + dy*dy + dz*dz)
             if dist3d > self.follow_target_distance then
-                self.action_queue:push_action(RunToLocation.new(target.x, target.y, target.z, self.follow_target_distance), true)
+                windower.send_command('input /follow t')
+                -- self.action_queue:push_action(RunToLocation.new(target.x, target.y, target.z, self.follow_target_distance), true)
             end
         end
     end
