@@ -150,12 +150,22 @@ function Gambit:tostring()
     if self.conditions:length() > 0 then
         conditionsDescription = self:getConditionsDescription()
     end
-    local abilityName = self.ability:get_localized_name()
-    if self.ability.get_display_name then
-        abilityName = self.ability:get_display_name()
+
+    local abilityName
+    if self.ability then
+        if type(self.ability.get_localized_name) == "function" then
+            abilityName = self.ability:get_localized_name()
+        elseif type(self.ability.get_name) == "function" then
+            abilityName = self.ability:get_name()
+        else
+            abilityName = tostring(self.ability)
+        end
+    else
+        abilityName = "Unknown Ability"
     end
+
     local jobAbilities = ""
-    if self.ability.get_job_abilities and (self.ability:get_job_abilities() or L{}):length() > 0 then
+    if self.ability and self.ability.get_job_abilities and (self.ability:get_job_abilities() or L{}):length() > 0 then
         jobAbilities = string.format(", Use with: %s", localization_util.commas(self.ability:get_job_abilities()))
     end
     return string.format("%s → %s: %s%s", conditionsDescription, self.target, abilityName, jobAbilities)

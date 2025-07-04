@@ -11,7 +11,6 @@ local PartyClaimedCondition = require('cylibs/conditions/party_claimed')
 local TargetMismatchCondition = require('cylibs/conditions/target_mismatch')
 local UnclaimedCondition = require('cylibs/conditions/unclaimed')
 local RunToLocation = require('cylibs/actions/runtolocation')
-local Approach = require('cylibs/actions/approach')
 
 local Gambiter = require('cylibs/trust/roles/gambiter')
 local Attacker = setmetatable({}, {__index = Gambiter })
@@ -151,7 +150,7 @@ function Attacker:set_attacker_settings(_)
                 GambitCondition.new(Distance.new(4, Condition.Operator.GreaterThan), GambitTarget.TargetType.CurrentTarget),
                 GambitCondition.new(MaxDistanceCondition.new(25), GambitTarget.TargetType.CurrentTarget), -- Don't chase too far
                 GambitCondition.new(ValidTargetCondition.new(alter_ego_util.untargetable_alter_egos()), GambitTarget.TargetType.CurrentTarget),
-            }, Approach.new(2), GambitTarget.TargetType.CurrentTarget),
+            }, RunToLocation.new(nil, nil, nil, 2), GambitTarget.TargetType.CurrentTarget),
         }
     }
 
