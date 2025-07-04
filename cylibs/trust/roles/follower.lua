@@ -184,9 +184,14 @@ function Follower:check_distance()
 
     local player = windower.ffxi.get_mob_by_id(windower.ffxi.get_player().id)
     if player then
-        local distance = player_util.distance(player_util.get_player_position(), follow_target:get_position())
-        local deltaZ = math.abs(z - player.z)
-        if distance < self.maxfollowdistance and deltaZ < 6 and (deltaZ > 1 or distance > self:get_distance()) then
+        -- Calculate full 3D distance
+        local dx = x - player.x
+        local dy = y - player.y
+        local dz = z - player.z
+        local distance3d = math.sqrt(dx*dx + dy*dy + dz*dz)
+        local deltaZ = math.abs(dz)
+        -- Increase Z tolerance to 12, and use 3D distance for follow logic
+        if distance3d < self.maxfollowdistance and deltaZ < 12 and (distance3d > self:get_distance()) then
             self.walk_action_queue:push_action(RunToLocation.new(x, y, z, self:get_distance()))
         end
     end
