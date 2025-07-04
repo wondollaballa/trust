@@ -56,6 +56,7 @@ function Attacker:on_add()
         self:check_gambits()
         self:check_and_follow_target()
     end), self:get_party():on_party_target_change())
+
 end
 
 function Attacker:target_change(target_index)
@@ -70,23 +71,7 @@ function Attacker:set_follow_target_distance(distance)
 end
 
 function Attacker:check_and_follow_target()
-    -- In KiteAssist mode, always follow the battle target ('bt')
-    if state.AutoEngageMode and state.AutoEngageMode.value == 'KiteAssist' then
-        local target = windower.ffxi.get_mob_by_target('bt')
-        if target and target.valid_target and target.hpp > 0 then
-            local player = windower.ffxi.get_mob_by_index(windower.ffxi.get_player().index)
-            if player then
-                local dx = target.x - player.x
-                local dy = target.y - player.y
-                local dz = target.z - player.z
-                local dist3d = math.sqrt(dx*dx + dy*dy + dz*dz)
-                if dist3d > 3 then
-                    self.action_queue:push_action(RunToLocation.new(target.x, target.y, target.z, 3), true)
-                end
-            end
-        end
-        return
-    end
+
     local target = windower.ffxi.get_mob_by_target('t')
     if target and target.valid_target and target.hpp > 0 then
         local player = windower.ffxi.get_mob_by_index(windower.ffxi.get_player().index)
@@ -95,58 +80,19 @@ function Attacker:check_and_follow_target()
             local dy = target.y - player.y
             local dz = target.z - player.z
             local dist3d = math.sqrt(dx*dx + dy*dy + dz*dz)
+            -- Use windower follow instead of RunToLocation
             if dist3d > self.follow_target_distance then
-                self.action_queue:push_action(RunToLocation.new(target.x, target.y, target.z, self.follow_target_distance), true)
+                windower.send_command('/follow ' .. target.name)
+            elseif dist3d <= self.follow_target_distance then
+                windower.send_command('/follow')  -- Stop following when close enough
             end
         end
     end
 end
 
--- Create a custom approach action
-local function CreateApproachAction(distance)
-    return {
-        can_perform = function(self, target)
-            if not target then return false end
-            local player = windower.ffxi.get_mob_by_index(windower.ffxi.get_player().index)
-            if not player then return false end
-            
-            local dx = target.x - player.x
-            local dy = target.y - player.y
-            local dz = target.z - player.z
-            local dist3d = math.sqrt(dx*dx + dy*dy + dz*dz)
-            
-            return dist3d > distance
-        end,
-        perform = function(self, target)
-            if target then
-                return RunToLocation.new(target.x, target.y, target.z, distance)
-            end
-            return nil
-        end
-    }
-end
-
 function Attacker:set_attacker_settings(_)
     local gambit_settings = {
         Gambits = L{
-           
-            -- Movement: Stay within melee range while engaged (for any mode)
-            Gambit.new(GambitTarget.TargetType.Enemy, L{
-                GambitCondition.new(StatusCondition.new('Engaged'), GambitTarget.TargetType.Self),
-                GambitCondition.new(Distance.new(4, Condition.Operator.GreaterThan), GambitTarget.TargetType.CurrentTarget),
-                GambitCondition.new(MaxDistanceCondition.new(25), GambitTarget.TargetType.CurrentTarget),
-                GambitCondition.new(ValidTargetCondition.new(alter_ego_util.untargetable_alter_egos()), GambitTarget.TargetType.CurrentTarget),
-            }, CreateApproachAction(2), GambitTarget.TargetType.CurrentTarget), -- Add 'false' as second parameter
-            
-            -- Movement: For KiteAssist mode, always stay close to battle target
-            Gambit.new(GambitTarget.TargetType.Enemy, L{
-                GambitCondition.new(ModeCondition.new('AutoEngageMode', 'KiteAssist'), GambitTarget.TargetType.Self),
-                GambitCondition.new(Distance.new(4, Condition.Operator.GreaterThan), GambitTarget.TargetType.Enemy),
-                GambitCondition.new(MaxDistanceCondition.new(25), GambitTarget.TargetType.Enemy),
-                GambitCondition.new(ValidTargetCondition.new(alter_ego_util.untargetable_alter_egos()), GambitTarget.TargetType.Enemy),
-            }, CreateApproachAction(2), GambitTarget.TargetType.Enemy), -- Add 'false' as second parameter
-
-
 
             Gambit.new(GambitTarget.TargetType.Enemy, L{
                 GambitCondition.new(ModeCondition.new('AutoEngageMode', 'Always'), GambitTarget.TargetType.Self),
