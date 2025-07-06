@@ -4,16 +4,14 @@ local Assistant = setmetatable({}, {__index = Role })
 Assistant.__index = Assistant
 Assistant.__class = "Assistant"
 
-state.AutoAssistantMode = M{['description'] = 'Assistant Mode', 'Off', 'Auto', 'KiteAssist'}
+state.AutoAssistantMode = M{['description'] = 'Assistant Mode', 'Off', 'Auto'}
 state.AutoAssistantMode:set_description('Auto', "See extra information on the current mob.")
-state.AutoAssistantMode:set_description('KiteAssist', "Direct trusts to attack the mob you select, even if you are not engaged.")
 
 function Assistant.new(action_queue, watch_list)
     local self = setmetatable(Role.new(action_queue), Assistant)
 
     self.watch_list = watch_list or S{}
     self.dispose_bag = DisposeBag.new()
-    self.kite_target_id = nil
 
     return self
 end
@@ -64,6 +62,5 @@ end
 function Assistant:get_type()
     return "assistant"
 end
-
 
 return Assistant
