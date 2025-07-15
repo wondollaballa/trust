@@ -23,7 +23,6 @@ return {
         },
         StatusRemovalSettings = {
             Gambits = L{
-                Gambit.new("Self", L{GambitCondition.new(HasBuffsCondition.new(L{"sleep"}, 1), "Self")}, Spell.new("Cure", L{}, L{}, nil, L{}), "Self", L{}, true),
                 Gambit.new("Ally", L{GambitCondition.new(HasBuffsCondition.new(L{"sleep"}, 1), "Ally")}, Spell.new("Cure", L{}, L{}, nil, L{}), "Ally", L{}, true),
             }
         },
@@ -63,7 +62,7 @@ return {
         },
         GambitSettings = {
             Default = L{
-                Gambit.new("Enemy", L{GambitCondition.new(ModeCondition.new("AutoTankMode", "Auto"), "Self")}, Spell.new("Flash", L{}, L{}, nil, L{}), "Enemy", L{}),
+                Gambit.new("Enemy", L{GambitCondition.new(ModeCondition.new("AutoTankMode", "Auto"), "Self"), GambitCondition.new(InBattleCondition.new(), "Self")}, Spell.new("Flash", L{}, L{}, nil, L{}), "Enemy", L{}),
             },
             Gambits = L{
                 Gambit.new("Ally", L{GambitCondition.new(MaxHitPointsPercentCondition.new(80), "Ally"), GambitCondition.new(InBattleCondition.new(), "Self")}, JobAbility.new("Cover", L{}, L{}), "Ally", L{}),
